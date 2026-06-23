@@ -41,8 +41,47 @@ function EyeOffIcon() {
   );
 }
 
+import { useRouter } from 'next/navigation';
+
 export default function UserLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid credentials');
+      }
+      if (data.role !== 'user') {
+        throw new Error('Access denied. User only.');
+      }
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('role', data.role);
+      localStorage.setItem('fullName', data.fullName);
+      router.push('/user/portal/home');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -52,8 +91,14 @@ export default function UserLoginPage() {
         </div>
 
         <div className={styles.formPanel}>
-          <div className={styles.formInner}>
+          <form className={styles.formInner} onSubmit={handleSubmit}>
             <h1 className={styles.formTitle}>Login</h1>
+
+            {error && (
+              <div style={{ color: '#ff4d4d', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'left' }}>
+                {error}
+              </div>
+            )}
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="email">Email</label>
@@ -65,6 +110,9 @@ export default function UserLoginPage() {
                   className={styles.input}
                   placeholder="Enter your Email Address"
                   autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -79,6 +127,9 @@ export default function UserLoginPage() {
                   className={`${styles.input} ${styles.inputWithToggle}`}
                   placeholder="Enter your Password"
                   autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
                 <button
                   type="button"
@@ -91,8 +142,8 @@ export default function UserLoginPage() {
               </div>
             </div>
 
-            <button type="submit" className={styles.submitBtn}>
-              Login as User
+            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login as User'}
             </button>
 
             <p className={styles.footer}>
@@ -101,7 +152,7 @@ export default function UserLoginPage() {
                 Create an account
               </Link>
             </p>
-          </div>
+          </form>
         </div>
       </div>
     </div>

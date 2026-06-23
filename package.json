@@ -48,7 +48,6 @@
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.40.0",
     "webpack": "^5.101.3",
-    "webpack-cli": "^7.0.0",
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
@@ -71,6 +70,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "typeorm": "^1.0.0",
+    "webpack-cli": "^7.0.0",
     "zod": "^4.4.3"
   }
 }

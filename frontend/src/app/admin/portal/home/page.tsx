@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -69,26 +70,58 @@ function CheckCircleIcon() {
 }
 
 // ─── Types & Data ─────────────────────────────────────────────────────────────
-type Concert = { id: number; name: string; description: string; seats: number };
-
-const LOREM_LONG =
-  'Lorem ipsum dolor sit amet consectetur. Elit purus nam gravida porttitor nibh urna sit ornare a. Proin dolor morbi id ornare aenean non. Fusce dignissim turpis sed non est orci sed in. Blandit ut purus nunc sed donec commodo morbi diam scelerisque.';
-
-const LOREM_SHORT =
-  'Lorem ipsum dolor sit amet consectetur. Elit purus nam gravida porttitor nibh urna sit ornare a.';
-
-const INITIAL_CONCERTS: Concert[] = [
-  { id: 1, name: 'Concert Name 1', description: LOREM_LONG, seats: 500 },
-  { id: 2, name: 'Concert Name 2', description: LOREM_SHORT, seats: 200 },
-];
+type Concert = {
+  id: number;
+  name: string;
+  description: string;
+  totalSeats: number;
+  availableSeats: number;
+  reservedCount: number;
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminHomePage() {
   const [tab, setTab] = useState<'overview' | 'create'>('overview');
-  const [concerts, setConcerts] = useState<Concert[]>(INITIAL_CONCERTS);
+  const [concerts, setConcerts] = useState<Concert[]>([]);
+  const [stats, setStats] = useState({ totalSeats: 0, totalReserved: 0, totalCancelled: 0 });
   const [deleteTarget, setDeleteTarget] = useState<Concert | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', seats: 500, description: '' });
+  const router = useRouter();
+
+  const fetchConcertsAndStats = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/admin/login');
+      return;
+    }
+
+    try {
+      // Fetch Concerts
+      const resConcerts = await fetch('http://localhost:3000/api/concerts', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (resConcerts.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
+      const dataConcerts = await resConcerts.json();
+      setConcerts(dataConcerts);
+
+      // Fetch Stats
+      const resStats = await fetch('http://localhost:3000/api/concerts/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const dataStats = await resStats.json();
+      setStats(dataStats);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchConcertsAndStats();
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -96,22 +129,57 @@ export default function AdminHomePage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!form.name.trim()) return;
-    setConcerts((prev) => [
-      ...prev,
-      { id: Date.now(), name: form.name.trim(), description: form.description, seats: form.seats },
-    ]);
-    setForm({ name: '', seats: 500, description: '' });
-    setTab('overview');
-    setToast('Create successfully');
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch('http://localhost:3000/api/concerts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          description: form.description,
+          totalSeats: form.seats,
+        }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to create concert');
+      }
+      setForm({ name: '', seats: 500, description: '' });
+      setTab('overview');
+      setToast('Create successfully');
+      fetchConcertsAndStats();
+    } catch (err: any) {
+      alert(err.message || 'Something went wrong');
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setConcerts((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-    setDeleteTarget(null);
-    setToast('Delete successfully');
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`http://localhost:3000/api/concerts/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete concert');
+      }
+      setDeleteTarget(null);
+      setToast('Delete successfully');
+      fetchConcertsAndStats();
+    } catch (err: any) {
+      alert(err.message || 'Something went wrong');
+    }
   };
 
   return (
@@ -132,17 +200,17 @@ export default function AdminHomePage() {
         <div className={`${styles.statCard} ${styles.blue}`}>
           <PersonIcon className={styles.statIcon} />
           <span className={styles.statLabel}>Total of seats</span>
-          <strong className={styles.statValue}>500</strong>
+          <strong className={styles.statValue}>{stats.totalSeats}</strong>
         </div>
         <div className={`${styles.statCard} ${styles.teal}`}>
           <AwardIcon />
           <span className={styles.statLabel}>Reserve</span>
-          <strong className={styles.statValue}>120</strong>
+          <strong className={styles.statValue}>{stats.totalReserved}</strong>
         </div>
         <div className={`${styles.statCard} ${styles.red}`}>
           <XCircleIcon className={styles.statIcon} />
           <span className={styles.statLabel}>Cancel</span>
-          <strong className={styles.statValue}>12</strong>
+          <strong className={styles.statValue}>{stats.totalCancelled}</strong>
         </div>
       </div>
 
@@ -165,26 +233,34 @@ export default function AdminHomePage() {
       {/* Overview Tab */}
       {tab === 'overview' && (
         <div className={styles.concertList}>
-          {concerts.map((concert) => (
-            <div key={concert.id} className={styles.concertCard}>
-              <h2 className={styles.concertName}>{concert.name}</h2>
-              <hr className={styles.divider} />
-              <p className={styles.concertDesc}>{concert.description}</p>
-              <div className={styles.concertFooter}>
-                <span className={styles.seatCount}>
-                  <PersonIcon className={styles.seatIcon} />
-                  {concert.seats}
-                </span>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => setDeleteTarget(concert)}
-                >
-                  <TrashIcon />
-                  Delete
-                </button>
+          {concerts.length === 0 ? (
+            <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999', margin: '2rem 0' }}>
+              No concerts found
+            </p>
+          ) : (
+            concerts.map((concert) => (
+              <div key={concert.id} className={styles.concertCard}>
+                <h2 className={styles.concertName}>{concert.name}</h2>
+                <hr className={styles.divider} />
+                <p className={concert.description ? styles.concertDesc : `${styles.concertDesc} ${styles.emptyDesc}`}>
+                  {concert.description || 'No description provided.'}
+                </p>
+                <div className={styles.concertFooter}>
+                  <span className={styles.seatCount}>
+                    <PersonIcon className={styles.seatIcon} />
+                    {concert.totalSeats} seats ({concert.availableSeats} available)
+                  </span>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => setDeleteTarget(concert)}
+                  >
+                    <TrashIcon />
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
 

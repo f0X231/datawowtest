@@ -41,9 +41,53 @@ function EyeOffIcon() {
   );
 }
 
+import { useRouter } from 'next/navigation';
+
 export default function UserSignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email || !password || !confirmPassword) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, email, password, role: 'user' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+      // Redirect to login page
+      router.push('/user/login');
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -53,14 +97,29 @@ export default function UserSignupPage() {
         </div>
 
         <div className={styles.formPanel}>
-          <div className={styles.formInner}>
+          <form className={styles.formInner} onSubmit={handleSubmit}>
             <h1 className={styles.formTitle}>Sign Up</h1>
+
+            {error && (
+              <div style={{ color: '#ff4d4d', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'left' }}>
+                {error}
+              </div>
+            )}
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="fullname">Full name</label>
               <div className={styles.inputWrap}>
                 <span className={styles.inputIcon}><PersonIcon /></span>
-                <input id="fullname" type="text" className={styles.input} placeholder="Enter your Full Name" autoComplete="name" />
+                <input
+                  id="fullname"
+                  type="text"
+                  className={styles.input}
+                  placeholder="Enter your Full Name"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
@@ -68,7 +127,16 @@ export default function UserSignupPage() {
               <label className={styles.label} htmlFor="email">Email</label>
               <div className={styles.inputWrap}>
                 <span className={styles.inputIcon}><PersonIcon /></span>
-                <input id="email" type="email" className={styles.input} placeholder="Enter your Email Address" autoComplete="email" />
+                <input
+                  id="email"
+                  type="email"
+                  className={styles.input}
+                  placeholder="Enter your Email Address"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
             </div>
 
@@ -82,6 +150,9 @@ export default function UserSignupPage() {
                   className={`${styles.input} ${styles.inputWithToggle}`}
                   placeholder="Create a Password"
                   autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
                 <button type="button" className={styles.eyeBtn} onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
                   {showPassword ? <EyeIcon /> : <EyeOffIcon />}
@@ -99,6 +170,9 @@ export default function UserSignupPage() {
                   className={`${styles.input} ${styles.inputWithToggle}`}
                   placeholder="Re-enter your Password"
                   autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
                 />
                 <button type="button" className={styles.eyeBtn} onClick={() => setShowConfirm((v) => !v)} aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}>
                   {showConfirm ? <EyeIcon /> : <EyeOffIcon />}
@@ -106,15 +180,15 @@ export default function UserSignupPage() {
               </div>
             </div>
 
-            <button type="submit" className={styles.submitBtn}>
-              Create an account
+            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
+              {isLoading ? 'Creating account...' : 'Create an account'}
             </button>
 
             <p className={styles.footer}>
               Already have an account?{' '}
               <Link href="/user/login" className={styles.link}>Login</Link>
             </p>
-          </div>
+          </form>
         </div>
       </div>
     </div>
