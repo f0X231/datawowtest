@@ -1,0 +1,192 @@
+.wrapper {
+  min-height: 100vh;
+  background-color: #eef2f7;
+}
+
+.breadcrumb {
+  padding: 12px 24px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.sep {
+  margin: 0 8px;
+}
+
+.content {
+  background: #fff;
+  margin: 0 20px 20px;
+  border-radius: 8px;
+  padding: 40px;
+  min-height: calc(100vh - 56px);
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 64px;
+}
+
+.brandCircle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #4278a8;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: 17px;
+  font-weight: 700;
+  color: #4278a8;
+  letter-spacing: 0.08em;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.title {
+  font-size: 34px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 14px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 44px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cardIconWrap {
+  width: 64px;
+  height: 64px;
+  color: #4278a8;
+  margin-bottom: 20px;
+}
+
+.cardTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4278a8;
+  margin-bottom: 16px;
+}
+
+.cardDesc {
+  font-size: 14px;
+  color: #4278a8;
+  line-height: 1.65;
+  flex: 1;
+}
+
+.enterBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 17px 24px;
+  margin-top: 32px;
+  background-color: #4278a8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.enterBtn:hover {
+  background-color: #345f87;
+}
+
+/* Admin card */
+.adminCard {
+  background-color: #4278a8;
+  border-color: transparent;
+}
+
+.adminCard .cardIconWrap {
+  color: #fff;
+}
+
+.adminCard .cardTitle {
+  color: #fff;
+}
+
+.adminCard .cardDesc {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.enterPortalBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 17px 24px;
+  margin-top: 32px;
+  background-color: #fff;
+  color: #4278a8;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.enterPortalBtn:hover {
+  background-color: #eef2f7;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .content {
+    margin: 0 12px 12px;
+    padding: 24px 16px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 32px 24px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .content {
+    padding: 32px 24px;
+  }
+}

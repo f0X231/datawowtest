@@ -1,0 +1,90 @@
+.concertList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.concertCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 24px 28px;
+}
+
+.concertName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4278a8;
+  margin: 0 0 16px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0 0 16px;
+}
+
+.concertDesc {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.65;
+  margin: 0 0 20px;
+}
+
+.concertFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seatCount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #374151;
+}
+
+.seatIcon {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+}
+
+.reserveBtn {
+  padding: 10px 24px;
+  background-color: #4278a8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.reserveBtn:hover {
+  background-color: #345f87;
+}
+
+.cancelBtn {
+  padding: 10px 24px;
+  background-color: #cd5c52;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.cancelBtn:hover {
+  background-color: #b84744;
+}
+
+@media (max-width: 640px) {
+  .concertCard {
+    padding: 20px 16px;
+  }
+}

@@ -1,0 +1,178 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #eef2f7;
+}
+
+.breadcrumb {
+  padding: 12px 24px;
+  font-size: 14px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.sep {
+  margin: 0 8px;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 42%;
+  flex-shrink: 0;
+}
+
+/* Form panel */
+.formPanel {
+  flex: 1;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 440px;
+}
+
+.formTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+/* Field */
+.field {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #111827;
+  background-color: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  border-color: #4278a8;
+}
+
+.inputWithToggle {
+  padding-right: 44px;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+}
+
+.eyeBtn:hover {
+  color: #6b7280;
+}
+
+/* Submit */
+.submitBtn {
+  width: 100%;
+  padding: 16px;
+  margin-top: 8px;
+  background-color: #4278a8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitBtn:hover {
+  background-color: #345f87;
+}
+
+/* Footer link */
+.footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.link {
+  color: #4278a8;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: 220px;
+  }
+
+  .formPanel {
+    padding: 40px 20px;
+  }
+
+  .formTitle {
+    font-size: 24px;
+  }
+}
