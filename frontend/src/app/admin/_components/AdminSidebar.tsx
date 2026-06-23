@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { logout } from '../../../lib/auth';
 import styles from './AdminSidebar.module.css';
 
 function HomeIcon() {
@@ -44,25 +45,23 @@ function LogoutIcon() {
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
-  const isActive = (path: string) => pathname.startsWith(path);
+  const handleLogout = () => {
+    logout();
+    router.push('/admin/access-level');
+  };
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.top}>
         <h1 className={styles.brand}>Admin</h1>
         <nav className={styles.nav}>
-          <Link
-            href="/admin/portal/home"
-            className={`${styles.navItem} ${isActive('/admin/portal/home') ? styles.active : ''}`}
-          >
+          <Link href="/admin/portal/home" className={`${styles.navItem} ${pathname.startsWith('/admin/portal/home') ? styles.active : ''}`}>
             <HomeIcon />
             Home
           </Link>
-          <Link
-            href="/admin/portal/history"
-            className={`${styles.navItem} ${isActive('/admin/portal/history') ? styles.active : ''}`}
-          >
+          <Link href="/admin/portal/history" className={`${styles.navItem} ${pathname.startsWith('/admin/portal/history') ? styles.active : ''}`}>
             <HistoryIcon />
             History
           </Link>
@@ -74,10 +73,14 @@ export default function AdminSidebar() {
       </div>
 
       <div className={styles.bottom}>
-        <Link href="/admin/access-level" className={styles.navItem}>
+        <button
+          className={styles.navItem}
+          onClick={handleLogout}
+          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+        >
           <LogoutIcon />
           Logout
-        </Link>
+        </button>
       </div>
     </aside>
   );

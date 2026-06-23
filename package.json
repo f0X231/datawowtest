@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "dev:backend": "nx serve api",
+    "dev:frontend": "nx serve web",
+    "build:backend": "nx build api",
+    "build:frontend": "nx build web",
+    "migration:run": "ts-node -r tsconfig-paths/register -e \"require('dotenv').config(); require('./backend/src/config/data-source').AppDataSource.initialize().then(ds => ds.runMigrations()).then(() => process.exit(0))\"",
+    "migration:revert": "ts-node -r tsconfig-paths/register -e \"require('dotenv').config(); require('./backend/src/config/data-source').AppDataSource.initialize().then(ds => ds.undoLastMigration()).then(() => process.exit(0))\""
+  },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",

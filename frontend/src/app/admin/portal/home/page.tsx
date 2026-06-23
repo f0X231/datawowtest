@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../../../lib/api';
+import { getToken, getRole } from '../../../../lib/auth';
 import styles from './page.module.css';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 function PersonIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -69,7 +70,6 @@ function CheckCircleIcon() {
   );
 }
 
-// ─── Types & Data ─────────────────────────────────────────────────────────────
 type Concert = {
   id: number;
   name: string;
@@ -79,49 +79,35 @@ type Concert = {
   reservedCount: number;
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminHomePage() {
+  const router = useRouter();
   const [tab, setTab] = useState<'overview' | 'create'>('overview');
   const [concerts, setConcerts] = useState<Concert[]>([]);
   const [stats, setStats] = useState({ totalSeats: 0, totalReserved: 0, totalCancelled: 0 });
   const [deleteTarget, setDeleteTarget] = useState<Concert | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', seats: 500, description: '' });
-  const router = useRouter();
 
-  const fetchConcertsAndStats = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
-
+  const fetchData = async () => {
     try {
-      // Fetch Concerts
-      const resConcerts = await fetch('http://localhost:3000/api/concerts', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (resConcerts.status === 401) {
-        router.push('/admin/login');
-        return;
-      }
-      const dataConcerts = await resConcerts.json();
-      setConcerts(dataConcerts);
-
-      // Fetch Stats
-      const resStats = await fetch('http://localhost:3000/api/concerts/stats', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dataStats = await resStats.json();
-      setStats(dataStats);
-    } catch (err) {
-      console.error(err);
+      const [concertsRes, statsRes] = await Promise.all([
+        api.get('/concerts'),
+        api.get('/concerts/stats'),
+      ]);
+      setConcerts(concertsRes.data);
+      setStats(statsRes.data);
+    } catch {
+      // interceptor handles 401
     }
   };
 
   useEffect(() => {
-    fetchConcertsAndStats();
-  }, []);
+    if (!getToken() || getRole() !== 'admin') {
+      router.push('/admin/login');
+      return;
+    }
+    fetchData();
+  }, [router]);
 
   useEffect(() => {
     if (!toast) return;
@@ -131,71 +117,45 @@ export default function AdminHomePage() {
 
   const handleCreate = async () => {
     if (!form.name.trim()) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const res = await fetch('http://localhost:3000/api/concerts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          description: form.description,
-          totalSeats: form.seats,
-        }),
+      await api.post('/concerts', {
+        name: form.name.trim(),
+        description: form.description,
+        totalSeats: form.seats,
       });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to create concert');
-      }
       setForm({ name: '', seats: 500, description: '' });
       setTab('overview');
       setToast('Create successfully');
-      fetchConcertsAndStats();
-    } catch (err: any) {
-      alert(err.message || 'Something went wrong');
+      fetchData();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(typeof msg === 'string' ? msg : 'Failed to create concert');
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     try {
-      const res = await fetch(`http://localhost:3000/api/concerts/${deleteTarget.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to delete concert');
-      }
+      await api.delete(`/concerts/${deleteTarget.id}`);
       setDeleteTarget(null);
       setToast('Delete successfully');
-      fetchConcertsAndStats();
-    } catch (err: any) {
-      alert(err.message || 'Something went wrong');
+      fetchData();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(typeof msg === 'string' ? msg : 'Failed to delete concert');
     }
   };
 
   return (
     <>
-      {/* Toast */}
       {toast && (
         <div className={styles.toast}>
           <CheckCircleIcon />
           <span>{toast}</span>
-          <button className={styles.toastClose} onClick={() => setToast(null)}>
-            &times;
-          </button>
+          <button className={styles.toastClose} onClick={() => setToast(null)}>&times;</button>
         </div>
       )}
 
-      {/* Stat Cards */}
       <div className={styles.stats}>
         <div className={`${styles.statCard} ${styles.blue}`}>
           <PersonIcon className={styles.statIcon} />
@@ -214,23 +174,15 @@ export default function AdminHomePage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${tab === 'overview' ? styles.activeTab : ''}`}
-          onClick={() => setTab('overview')}
-        >
+        <button className={`${styles.tab} ${tab === 'overview' ? styles.activeTab : ''}`} onClick={() => setTab('overview')}>
           Overview
         </button>
-        <button
-          className={`${styles.tab} ${tab === 'create' ? styles.activeTab : ''}`}
-          onClick={() => setTab('create')}
-        >
+        <button className={`${styles.tab} ${tab === 'create' ? styles.activeTab : ''}`} onClick={() => setTab('create')}>
           Create
         </button>
       </div>
 
-      {/* Overview Tab */}
       {tab === 'overview' && (
         <div className={styles.concertList}>
           {concerts.length === 0 ? (
@@ -242,18 +194,13 @@ export default function AdminHomePage() {
               <div key={concert.id} className={styles.concertCard}>
                 <h2 className={styles.concertName}>{concert.name}</h2>
                 <hr className={styles.divider} />
-                <p className={concert.description ? styles.concertDesc : `${styles.concertDesc} ${styles.emptyDesc}`}>
-                  {concert.description || 'No description provided.'}
-                </p>
+                <p className={styles.concertDesc}>{concert.description || 'No description provided.'}</p>
                 <div className={styles.concertFooter}>
                   <span className={styles.seatCount}>
                     <PersonIcon className={styles.seatIcon} />
                     {concert.totalSeats} seats ({concert.availableSeats} available)
                   </span>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => setDeleteTarget(concert)}
-                  >
+                  <button className={styles.deleteBtn} onClick={() => setDeleteTarget(concert)}>
                     <TrashIcon />
                     Delete
                   </button>
@@ -264,7 +211,6 @@ export default function AdminHomePage() {
         </div>
       )}
 
-      {/* Create Tab */}
       {tab === 'create' && (
         <div className={styles.createCard}>
           <h2 className={styles.createTitle}>Create</h2>
@@ -291,9 +237,7 @@ export default function AdminHomePage() {
                   value={form.seats}
                   onChange={(e) => setForm((p) => ({ ...p, seats: Number(e.target.value) }))}
                 />
-                <span className={styles.inputIcon}>
-                  <PersonIcon />
-                </span>
+                <span className={styles.inputIcon}><PersonIcon /></span>
               </div>
             </div>
           </div>
@@ -318,25 +262,15 @@ export default function AdminHomePage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deleteTarget && (
         <div className={styles.overlay} onClick={() => setDeleteTarget(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalIconWrap}>
-              <XCircleFilledIcon />
-            </div>
+            <div className={styles.modalIconWrap}><XCircleFilledIcon /></div>
             <p className={styles.modalQuestion}>Are you sure to delete?</p>
             <p className={styles.modalName}>&ldquo;{deleteTarget.name}&rdquo;</p>
             <div className={styles.modalActions}>
-              <button
-                className={styles.cancelModalBtn}
-                onClick={() => setDeleteTarget(null)}
-              >
-                Cancel
-              </button>
-              <button className={styles.confirmDeleteBtn} onClick={handleDelete}>
-                Yes, Delete
-              </button>
+              <button className={styles.cancelModalBtn} onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className={styles.confirmDeleteBtn} onClick={handleDelete}>Yes, Delete</button>
             </div>
           </div>
         </div>

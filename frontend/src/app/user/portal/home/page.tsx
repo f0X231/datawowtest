@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../../../lib/api';
+import { getToken, getRole } from '../../../../lib/auth';
 import styles from './page.module.css';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 function PersonIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -23,14 +24,12 @@ function CheckCircleIcon() {
   );
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type Concert = {
   id: number;
   name: string;
   description: string;
   totalSeats: number;
   availableSeats: number;
-  reservedCount: number;
   userReserved: boolean;
 };
 
@@ -42,48 +41,34 @@ type HistoryItem = {
 };
 
 export default function UserHomePage() {
+  const router = useRouter();
   const [tab, setTab] = useState<'concerts' | 'history'>('concerts');
   const [concerts, setConcerts] = useState<Concert[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const router = useRouter();
 
   const loadData = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/user/login');
-      return;
-    }
-
     try {
-      // 1. Fetch Concerts
-      const resConcerts = await fetch('http://localhost:3000/api/concerts', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (resConcerts.status === 401) {
-        router.push('/user/login');
-        return;
-      }
-      const dataConcerts = await resConcerts.json();
-      setConcerts(dataConcerts);
-
-      // 2. Fetch History
-      const resHistory = await fetch('http://localhost:3000/api/reservations/history/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const dataHistory = await resHistory.json();
-      setHistory(dataHistory);
-    } catch (err) {
-      console.error(err);
+      const [concertsRes, historyRes] = await Promise.all([
+        api.get('/concerts'),
+        api.get('/reservations/history/me'),
+      ]);
+      setConcerts(concertsRes.data);
+      setHistory(historyRes.data);
+    } catch {
       setError('Failed to fetch data');
     }
   };
 
   useEffect(() => {
+    if (!getToken() || getRole() !== 'user') {
+      router.push('/user/login');
+      return;
+    }
     loadData();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!toast) return;
@@ -92,48 +77,30 @@ export default function UserHomePage() {
   }, [toast]);
 
   const handleReserve = async (concertId: number) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     setActionLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3000/api/reservations/reserve/${concertId}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to reserve seat');
-      }
-      setToast('Reserve successfully');
+      await api.post(`/reservations/reserve/${concertId}`);
+      setToast('Reserved successfully');
       loadData();
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Failed to reserve seat');
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleCancel = async (concertId: number) => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
     setActionLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3000/api/reservations/cancel/${concertId}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to cancel reservation');
-      }
-      setToast('Cancel successfully');
+      await api.post(`/reservations/cancel/${concertId}`);
+      setToast('Cancelled successfully');
       loadData();
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Failed to cancel reservation');
     } finally {
       setActionLoading(false);
     }
@@ -141,47 +108,33 @@ export default function UserHomePage() {
 
   return (
     <>
-      {/* Toast */}
       {toast && (
         <div className={styles.toast}>
           <CheckCircleIcon />
           <span>{toast}</span>
-          <button className={styles.toastClose} onClick={() => setToast(null)}>
-            &times;
-          </button>
+          <button className={styles.toastClose} onClick={() => setToast(null)}>&times;</button>
         </div>
       )}
 
-      {/* Global Error Banner */}
       {error && (
-        <div style={{ background: '#ffebee', color: '#c62828', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', border: '1px solid #ffcdd2' }}>
+        <div style={{ background: '#fef2f2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', border: '1px solid #fecaca' }}>
           {error}
         </div>
       )}
 
-      {/* Tabs */}
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${tab === 'concerts' ? styles.activeTab : ''}`}
-          onClick={() => setTab('concerts')}
-        >
+        <button className={`${styles.tab} ${tab === 'concerts' ? styles.activeTab : ''}`} onClick={() => setTab('concerts')}>
           Concerts
         </button>
-        <button
-          className={`${styles.tab} ${tab === 'history' ? styles.activeTab : ''}`}
-          onClick={() => setTab('history')}
-        >
+        <button className={`${styles.tab} ${tab === 'history' ? styles.activeTab : ''}`} onClick={() => setTab('history')}>
           My History
         </button>
       </div>
 
-      {/* Concerts Discovery Tab */}
       {tab === 'concerts' && (
         <div className={styles.concertList}>
           {concerts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#999', margin: '2rem 0' }}>
-              No concerts available
-            </p>
+            <p style={{ textAlign: 'center', color: '#999', margin: '2rem 0' }}>No concerts available</p>
           ) : (
             concerts.map((concert) => (
               <div key={concert.id} className={styles.concertCard}>
@@ -193,29 +146,16 @@ export default function UserHomePage() {
                     <PersonIcon className={styles.seatIcon} />
                     {concert.totalSeats.toLocaleString()} seats ({concert.availableSeats} available)
                   </span>
-
                   {concert.userReserved ? (
-                    <button
-                      className={styles.cancelBtn}
-                      disabled={actionLoading}
-                      onClick={() => handleCancel(concert.id)}
-                    >
+                    <button className={styles.cancelBtn} disabled={actionLoading} onClick={() => handleCancel(concert.id)}>
                       Cancel
                     </button>
                   ) : concert.availableSeats > 0 ? (
-                    <button
-                      className={styles.reserveBtn}
-                      disabled={actionLoading}
-                      onClick={() => handleReserve(concert.id)}
-                    >
+                    <button className={styles.reserveBtn} disabled={actionLoading} onClick={() => handleReserve(concert.id)}>
                       Reserve
                     </button>
                   ) : (
-                    <button
-                      className={styles.reserveBtn}
-                      disabled={true}
-                      style={{ opacity: 0.6 }}
-                    >
+                    <button className={styles.reserveBtn} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
                       Fully Booked
                     </button>
                   )}
@@ -226,12 +166,11 @@ export default function UserHomePage() {
         </div>
       )}
 
-      {/* Personal History Tab */}
       {tab === 'history' && (
         <div className={styles.tableWrap}>
           {history.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>
-              You haven't reserved any concerts yet.
+              You haven&apos;t reserved any concerts yet.
             </div>
           ) : (
             <table className={styles.table}>
@@ -247,7 +186,7 @@ export default function UserHomePage() {
                   <tr key={row.id}>
                     <td>{new Date(row.datetime).toLocaleString()}</td>
                     <td>{row.concertName}</td>
-                    <td style={{ color: row.action === 'Reserve' ? '#00e676' : '#ff1744', fontWeight: 'bold' }}>
+                    <td style={{ color: row.action === 'Reserve' ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
                       {row.action}
                     </td>
                   </tr>

@@ -1,8 +1,4 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
+import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
@@ -12,10 +8,7 @@ async function bootstrap() {
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   
-  // Enable CORS so the frontend can interact with backend
   app.enableCors();
-  
-  // Enable global ValidationPipe for body validation
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   
   const port = process.env.PORT || 3000;

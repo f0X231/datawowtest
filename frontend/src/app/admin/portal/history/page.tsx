@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../../../lib/api';
+import { getToken, getRole } from '../../../../lib/auth';
 import styles from './page.module.css';
 
 type HistoryItem = {
@@ -13,47 +15,33 @@ type HistoryItem = {
 };
 
 export default function AdminHistoryPage() {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!getToken() || getRole() !== 'admin') {
       router.push('/admin/login');
       return;
     }
 
-    fetch('http://localhost:3000/api/reservations/history', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (res.status === 401) {
-          router.push('/admin/login');
-          throw new Error('Unauthorized');
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setHistory(data);
-      })
-      .catch((err) => {
-        if (err.message !== 'Unauthorized') {
-          setError('Failed to fetch history');
-        }
-      });
+    api.get('/reservations/history')
+      .then((res) => setHistory(res.data))
+      .catch(() => setError('Failed to fetch history'))
+      .finally(() => setLoading(false));
   }, [router]);
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>Loading...</div>;
+  }
 
   return (
     <div className={styles.tableWrap}>
       {error ? (
-        <div style={{ color: '#ff4d4d', textAlign: 'center', padding: '2rem' }}>
-          {error}
-        </div>
+        <div style={{ color: '#dc2626', textAlign: 'center', padding: '2rem' }}>{error}</div>
       ) : history.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>
-          No reservation history found
-        </div>
+        <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>No reservation history found</div>
       ) : (
         <table className={styles.table}>
           <thead>
@@ -70,7 +58,7 @@ export default function AdminHistoryPage() {
                 <td>{new Date(row.datetime).toLocaleString()}</td>
                 <td>{row.username}</td>
                 <td>{row.concertName}</td>
-                <td style={{ color: row.action === 'Reserve' ? '#00e676' : '#ff1744', fontWeight: 'bold' }}>
+                <td style={{ color: row.action === 'Reserve' ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
                   {row.action}
                 </td>
               </tr>

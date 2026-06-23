@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import api from '../../../lib/api';
+import { setAuth } from '../../../lib/auth';
 import AuthSidebar from '../../admin/_components/AuthSidebar';
 import styles from '../../admin/login/page.module.css';
 
@@ -41,45 +44,32 @@ function EyeOffIcon() {
   );
 }
 
-import { useRouter } from 'next/navigation';
-
 export default function UserLoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
-    }
-    setError(null);
-    setIsLoading(true);
+    setError('');
+    setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Invalid credentials');
+      const res = await api.post('/auth/login', { email, password });
+      const { accessToken, role, fullName } = res.data;
+      if (role !== 'user') {
+        setError('This account does not have user access. Please use the Admin portal.');
+        return;
       }
-      if (data.role !== 'user') {
-        throw new Error('Access denied. User only.');
-      }
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('role', data.role);
-      localStorage.setItem('fullName', data.fullName);
+      setAuth(accessToken, role, fullName);
       router.push('/user/portal/home');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(typeof msg === 'string' ? msg : 'Invalid email or password.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -91,68 +81,64 @@ export default function UserLoginPage() {
         </div>
 
         <div className={styles.formPanel}>
-          <form className={styles.formInner} onSubmit={handleSubmit}>
+          <div className={styles.formInner}>
             <h1 className={styles.formTitle}>Login</h1>
 
-            {error && (
-              <div style={{ color: '#ff4d4d', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'left' }}>
-                {error}
+            <form onSubmit={handleSubmit}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="email">Email</label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}><PersonIcon /></span>
+                  <input
+                    id="email"
+                    type="email"
+                    className={styles.input}
+                    placeholder="Enter your Email Address"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
-            )}
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="email">Email</label>
-              <div className={styles.inputWrap}>
-                <span className={styles.inputIcon}><PersonIcon /></span>
-                <input
-                  id="email"
-                  type="email"
-                  className={styles.input}
-                  placeholder="Enter your Email Address"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="password">Password</label>
+                <div className={styles.inputWrap}>
+                  <span className={styles.inputIcon}><LockIcon /></span>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`${styles.input} ${styles.inputWithToggle}`}
+                    placeholder="Enter your Password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={styles.eyeBtn}
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="password">Password</label>
-              <div className={styles.inputWrap}>
-                <span className={styles.inputIcon}><LockIcon /></span>
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  className={`${styles.input} ${styles.inputWithToggle}`}
-                  placeholder="Enter your Password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.eyeBtn}
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeIcon /> : <EyeOffIcon />}
-                </button>
-              </div>
-            </div>
+              {error && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 8 }}>{error}</p>}
 
-            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login as User'}
-            </button>
+              <button type="submit" className={styles.submitBtn} disabled={loading}>
+                {loading ? 'Logging in...' : 'Login as User'}
+              </button>
+            </form>
 
             <p className={styles.footer}>
               Don&apos;t have an account?{' '}
-              <Link href="/user/signup" className={styles.link}>
-                Create an account
-              </Link>
+              <Link href="/user/signup" className={styles.link}>Create an account</Link>
             </p>
-          </form>
+          </div>
         </div>
       </div>
     </div>
