@@ -86,6 +86,7 @@ export default function AdminHomePage() {
   const [stats, setStats] = useState({ totalSeats: 0, totalReserved: 0, totalCancelled: 0 });
   const [deleteTarget, setDeleteTarget] = useState<Concert | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', seats: 500, description: '' });
 
   const fetchData = async () => {
@@ -116,7 +117,11 @@ export default function AdminHomePage() {
   }, [toast]);
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setError('กรุณากรอกชื่อคอนเสิร์ต');
+      return;
+    }
+    setError(null);
     try {
       await api.post('/concerts', {
         name: form.name.trim(),
@@ -125,24 +130,26 @@ export default function AdminHomePage() {
       });
       setForm({ name: '', seats: 500, description: '' });
       setTab('overview');
-      setToast('Create successfully');
+      setToast('สร้างคอนเสิร์ตสำเร็จ');
       fetchData();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(typeof msg === 'string' ? msg : 'Failed to create concert');
+      setError(typeof msg === 'string' ? msg : 'ไม่สามารถสร้างคอนเสิร์ตได้');
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setError(null);
     try {
       await api.delete(`/concerts/${deleteTarget.id}`);
       setDeleteTarget(null);
-      setToast('Delete successfully');
+      setToast('ลบคอนเสิร์ตสำเร็จ');
       fetchData();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(typeof msg === 'string' ? msg : 'Failed to delete concert');
+      setDeleteTarget(null);
+      setError(typeof msg === 'string' ? msg : 'ไม่สามารถลบคอนเสิร์ตได้');
     }
   };
 
@@ -153,6 +160,13 @@ export default function AdminHomePage() {
           <CheckCircleIcon />
           <span>{toast}</span>
           <button className={styles.toastClose} onClick={() => setToast(null)}>&times;</button>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ background: '#fef2f2', color: '#dc2626', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', border: '1px solid #fecaca', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '16px', lineHeight: 1 }}>&times;</button>
         </div>
       )}
 
@@ -187,7 +201,7 @@ export default function AdminHomePage() {
         <div className={styles.concertList}>
           {concerts.length === 0 ? (
             <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#999', margin: '2rem 0' }}>
-              No concerts found
+              ยังไม่มีคอนเสิร์ต
             </p>
           ) : (
             concerts.map((concert) => (

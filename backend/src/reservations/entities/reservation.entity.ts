@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -31,8 +32,10 @@ export class Reservation {
   createdAt: Date;
 
   @ManyToOne(() => User, (user) => user.reservations)
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @ManyToOne(() => Concert, (concert) => concert.reservations)
+  @JoinColumn({ name: 'concert_id' })
   concert: Concert;
 }

@@ -28,12 +28,12 @@ export default function AdminHistoryPage() {
 
     api.get('/reservations/history')
       .then((res) => setHistory(res.data))
-      .catch(() => setError('Failed to fetch history'))
+      .catch(() => setError('ไม่สามารถโหลดประวัติได้'))
       .finally(() => setLoading(false));
   }, [router]);
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>Loading...</div>;
+    return <div style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>กำลังโหลด...</div>;
   }
 
   return (
@@ -41,7 +41,7 @@ export default function AdminHistoryPage() {
       {error ? (
         <div style={{ color: '#dc2626', textAlign: 'center', padding: '2rem' }}>{error}</div>
       ) : history.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>No reservation history found</div>
+        <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>ไม่พบประวัติการจอง</div>
       ) : (
         <table className={styles.table}>
           <thead>

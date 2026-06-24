@@ -15,10 +15,9 @@
 
 .content {
   background: #fff;
-  margin: 0 20px 20px;
   border-radius: 8px;
   padding: 40px;
-  min-height: calc(100vh - 56px);
+  min-height: 100vh;
 }
 
 /* Brand */
@@ -168,7 +167,6 @@
 /* Responsive */
 @media (max-width: 640px) {
   .content {
-    margin: 0 12px 12px;
     padding: 24px 16px;
   }
 

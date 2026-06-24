@@ -1,14 +1,14 @@
 # Concert Reservation System
 
-Full-stack concert ticket reservation app using Next.js (frontend) and NestJS (backend).
+ระบบจองบัตรคอนเสิร์ต สร้างด้วย Next.js (frontend) และ NestJS (backend) ใน NX monorepo
 
-## Project Structure
+## โครงสร้างโปรเจค
 
 ```
 datawowtest/
 ├── frontend/          # Next.js 16 — App Router
 │   └── src/
-│       ├── app/       # Pages: admin portal, user portal, auth
+│       ├── app/       # หน้าต่างๆ: admin portal, user portal, auth
 │       └── lib/       # axios client + auth helpers
 ├── backend/           # NestJS 11 — REST API
 │   └── src/
@@ -23,12 +23,12 @@ datawowtest/
 └── .env.example
 ```
 
-## Prerequisites
+## สิ่งที่ต้องมีก่อนรัน
 
 - Docker & Docker Compose v2+
-- Node.js 22+ (for local dev only)
+- Node.js 22+ (สำหรับรันบนเครื่องโดยตรง)
 
-## Running with Docker
+## รันด้วย Docker
 
 ```bash
 cp .env.example .env
@@ -36,14 +36,14 @@ docker compose up --build
 # API → http://localhost:3000/api
 ```
 
-The migration runs automatically on startup — no extra step needed.
+Migration จะรันอัตโนมัติตอน backend เริ่ม ไม่ต้องรันเพิ่ม
 
-## Local Development
+## รันบนเครื่องโดยตรง
 
 ```bash
 npm install
 
-# Start only the database
+# เริ่ม database อย่างเดียวก่อน
 docker compose up db -d
 
 # Backend
@@ -54,20 +54,20 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" > frontend/.env.local
 npm run dev:frontend       # http://localhost:4200
 ```
 
-## Running Tests
+## รัน Tests
 
 ```bash
 node node_modules/.bin/jest --config backend/jest.config.ts --no-coverage --forceExit
 ```
 
-Tests cover `ConcertsService` (create, delete, seat calculation, fully-booked, userReserved) and `ReservationsService` (reserve, cancel, history) including edge cases like overbooking and re-reservation after cancel.
+ครอบคลุม `ConcertsService` และ `ReservationsService` รวม edge cases เช่น overbooking และการจองซ้ำหลังจาก cancel
 
 ## API Endpoints
 
-| Method | Path | Role |
+| Method | Path | สิทธิ์ |
 |---|---|---|
-| POST | `/api/auth/register` | public |
-| POST | `/api/auth/login` | public |
+| POST | `/api/auth/register` | สาธารณะ |
+| POST | `/api/auth/login` | สาธารณะ |
 | GET | `/api/concerts` | admin, user |
 | GET | `/api/concerts/stats` | admin |
 | POST | `/api/concerts` | admin |
@@ -77,7 +77,7 @@ Tests cover `ConcertsService` (create, delete, seat calculation, fully-booked, u
 | POST | `/api/reservations/cancel/:id` | user |
 | GET | `/api/reservations/history/me` | user |
 
-## Libraries
+## Libraries ที่ใช้
 
 **Backend:** `@nestjs/common`, `@nestjs/jwt`, `@nestjs/passport`, `@nestjs/typeorm`, `typeorm`, `pg`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`
 
@@ -91,19 +91,19 @@ Tests cover `ConcertsService` (create, delete, seat calculation, fully-booked, u
 
 ### Performance Optimization
 
-For large datasets and high traffic:
+สำหรับระบบที่มีข้อมูลเยอะและ traffic สูง:
 
-- **Indexes** on `reservations(user_id)` and `reservations(concert_id)` to speed up seat calculation queries.
-- **Redis cache** for concert listings and stats (short TTL, invalidated on write). Most reads are the same data repeated at high volume.
-- **Read replica** for all GET endpoints so queries don't compete with writes on the primary DB.
-- **Pagination** on concert listing and history endpoints instead of returning full tables.
-- **CDN** (e.g. Vercel Edge / Cloudflare) for frontend static assets.
+- เพิ่ม **Index** บน `reservations(user_id)` และ `reservations(concert_id)` เพื่อเร่งการคำนวณที่นั่ง
+- ใช้ **Redis cache** สำหรับ concert listing และ stats โดยกำหนด TTL สั้น และ invalidate เมื่อมีการเขียนข้อมูล
+- แยก **Read replica** สำหรับ GET endpoints ทั้งหมด เพื่อไม่ให้ query ไปแย่ง resource กับฝั่ง write
+- เพิ่ม **Pagination** บน endpoint ที่ return list แทนการดึงข้อมูลทั้งหมดในครั้งเดียว
+- ใช้ **CDN** สำหรับ static assets ของ frontend
 
 ### Concurrency Control
 
-1,000 users hitting reserve at the same millisecond can cause a race condition — all read "seats available" before any write completes, leading to overbooking.
+ถ้ามีผู้ใช้ 1,000 คนกด reserve พร้อมกัน อาจเกิด race condition ได้ เพราะทุกคน read ว่า "ยังมีที่นั่ง" ก่อนที่ใครจะ write เสร็จ ทำให้ที่นั่งเกิน
 
-The fix is **pessimistic locking** inside a database transaction:
+วิธีแก้คือใช้ **pessimistic locking** ภายใน transaction:
 
 ```typescript
 await dataSource.transaction(async (manager) => {
@@ -122,8 +122,8 @@ await dataSource.transaction(async (manager) => {
 });
 ```
 
-`SELECT FOR UPDATE` locks the concert row for the duration of the transaction. Concurrent requests queue behind it and will correctly see 0 seats once the lock is released.
+`SELECT FOR UPDATE` จะ lock row นั้นไว้ตลอด transaction ทำให้ request ที่เข้ามาพร้อมกันต้องรอคิว และจะเห็นสถานะที่นั่งที่ถูกต้องหลัง lock ถูกปล่อย
 
-**Alternatives:**
-- *Optimistic locking* — add a `version` column; conflicts trigger a retry. Works well under low contention but can retry-storm under high concurrency.
-- *Message queue* (Bull/Redis) — serialize all reservation requests into a FIFO queue per concert. Eliminates races entirely but adds latency and infrastructure overhead.
+**ทางเลือกอื่น:**
+- *Optimistic locking* — เพิ่ม column `version` แล้ว retry เมื่อเกิด conflict เหมาะกับระบบที่ contention ต่ำ แต่ถ้า traffic สูงมากอาจเกิด retry storm
+- *Message queue* (Bull/Redis) — รับ request ทุกอันเข้า queue แล้วประมวลผลทีละตัวต่อ concert ป้องกัน race ได้ 100% แต่เพิ่ม latency และ infrastructure

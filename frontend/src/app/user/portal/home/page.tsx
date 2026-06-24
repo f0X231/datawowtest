@@ -58,7 +58,7 @@ export default function UserHomePage() {
       setConcerts(concertsRes.data);
       setHistory(historyRes.data);
     } catch {
-      setError('Failed to fetch data');
+      setError('ไม่สามารถโหลดข้อมูลได้');
     }
   };
 
@@ -81,11 +81,11 @@ export default function UserHomePage() {
     setError(null);
     try {
       await api.post(`/reservations/reserve/${concertId}`);
-      setToast('Reserved successfully');
+      setToast('จองที่นั่งสำเร็จ');
       loadData();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Failed to reserve seat');
+      setError(typeof msg === 'string' ? msg : 'ไม่สามารถจองที่นั่งได้');
     } finally {
       setActionLoading(false);
     }
@@ -96,11 +96,11 @@ export default function UserHomePage() {
     setError(null);
     try {
       await api.post(`/reservations/cancel/${concertId}`);
-      setToast('Cancelled successfully');
+      setToast('ยกเลิกการจองสำเร็จ');
       loadData();
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Failed to cancel reservation');
+      setError(typeof msg === 'string' ? msg : 'ไม่สามารถยกเลิกการจองได้');
     } finally {
       setActionLoading(false);
     }
@@ -134,13 +134,13 @@ export default function UserHomePage() {
       {tab === 'concerts' && (
         <div className={styles.concertList}>
           {concerts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#999', margin: '2rem 0' }}>No concerts available</p>
+            <p style={{ textAlign: 'center', color: '#999', margin: '2rem 0' }}>ไม่มีคอนเสิร์ตในขณะนี้</p>
           ) : (
             concerts.map((concert) => (
               <div key={concert.id} className={styles.concertCard}>
                 <h2 className={styles.concertName}>{concert.name}</h2>
                 <hr className={styles.divider} />
-                <p className={styles.concertDesc}>{concert.description || 'No description provided.'}</p>
+                <p className={styles.concertDesc}>{concert.description || 'ไม่มีคำอธิบาย'}</p>
                 <div className={styles.concertFooter}>
                   <span className={styles.seatCount}>
                     <PersonIcon className={styles.seatIcon} />
@@ -170,7 +170,7 @@ export default function UserHomePage() {
         <div className={styles.tableWrap}>
           {history.length === 0 ? (
             <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>
-              You haven&apos;t reserved any concerts yet.
+              ยังไม่มีประวัติการจอง
             </div>
           ) : (
             <table className={styles.table}>

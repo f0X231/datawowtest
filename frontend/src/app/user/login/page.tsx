@@ -60,14 +60,14 @@ export default function UserLoginPage() {
       const res = await api.post('/auth/login', { email, password });
       const { accessToken, role, fullName } = res.data;
       if (role !== 'user') {
-        setError('This account does not have user access. Please use the Admin portal.');
+        setError('บัญชีนี้ไม่มีสิทธิ์เข้าใช้งานในฐานะ User');
         return;
       }
       setAuth(accessToken, role, fullName);
       router.push('/user/portal/home');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Invalid email or password.');
+      setError(typeof msg === 'string' ? msg : 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     } finally {
       setLoading(false);
     }

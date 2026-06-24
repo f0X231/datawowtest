@@ -59,7 +59,7 @@ export default function UserSignupPage() {
     e.preventDefault();
     setError('');
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError('รหัสผ่านไม่ตรงกัน');
       return;
     }
     setLoading(true);
@@ -70,7 +70,7 @@ export default function UserSignupPage() {
       router.push('/user/portal/home');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(typeof msg === 'string' ? msg : 'Registration failed. Please try again.');
+      setError(typeof msg === 'string' ? msg : 'ไม่สามารถสมัครสมาชิกได้ กรุณาลองใหม่อีกครั้ง');
     } finally {
       setLoading(false);
     }
